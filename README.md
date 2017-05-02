@@ -15,7 +15,7 @@ class MainPage(Page):
 class MainPageCategories(Orderable):
     page = ParentalKey('app.MainPage', related_name='categories')
     category = models.ForeignKey(
-        'app.Page',
+        'wagtailcore.Page',
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
