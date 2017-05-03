@@ -38,3 +38,16 @@ class MainPageCategories(Orderable):
     {% endfor %}
 </ul>
 ```
+
+## Programatically create an image from file
+
+```python
+from django.core.files.images import ImageFile
+from wagtail.wagtailimages.models import Image
+
+image = Image.objects.create(
+    title='Sample Image',
+    file=ImageFile(open('path/to/image.jpg', 'rb'), name='image.jpg'),
+)
+page = Page(image=image)
+```
