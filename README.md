@@ -39,6 +39,33 @@ class MainPageCategories(Orderable):
 </ul>
 ```
 
+## Orderable list of foreign pages from Settings
+
+```python
+from wagtail.contrib.settings.models import BaseSetting, register_setting
+from modelcluster.models import ClusterableModel
+
+
+@register_setting
+class SomeSettings(BaseSetting, ClusterableModel):
+    panels = [
+        InlinePanel('widgets'),
+    ]
+
+
+class WidgetSomeSettings(Orderable):
+    some_setting = ParentalKey('app_label.SomeSettings', related_name='widgets')
+    widget = ParentalKey('app_label.Widget', related_name='some_setting')
+
+    panels = [
+        PageChooserPanel('widget', 'app_label.Widget'),
+    ]
+```
+
+See [Orderable list of foreign pages](#orderable-list-of-foreign-pages) for rendering
+and [Programatically create Site with Settings](#programatically-create-site-with-settings) for creating development data tied to a setting.
+
+
 ## Programatically create an image from file
 
 ```python
@@ -50,4 +77,17 @@ image = Image.objects.create(
     file=ImageFile(open('path/to/image.jpg', 'rb'), name='image.jpg'),
 )
 page = Page(image=image)
+```
+
+## Programatically create Site with Settings
+
+```python
+site = Site.objects.create(
+    site_name='dev',
+    hostname='localhost',
+    port='8000',
+    root_page=some_home_page,
+    is_default_site=True,
+)
+settings = SomeSettings.for_site(site)
 ```
