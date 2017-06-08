@@ -95,29 +95,49 @@ settings = SomeSettings.for_site(site)
 ## Search using tags
 
 ```python
-def get_context(self, request, *args, **kwargs):
-    context = super(MaterialsIndexPage, self).get_context(request, *args, **kwargs)
-    
-    # Filtering children `ChildPage`s on the MainPage model
-    qs = MainPage.objects.child_of(context['self']).live()
+class MainPage(Page):
+    tags = ClusterTaggableManager(through='common.MainPageTag', blank=True)
 
-    tags_filter = request.GET.get('tags', None)
-    if tags_filter:
-        tags = tags_filter.split(',')
-        querysets = []
-        for tag in tags:
-            querysets.append(MainPage.objects.filter(tags__slug=tag))
-        qs = qs.intersection(*querysets)
-        context['tags'] = tags
+    content_panels = Page.content_panels + [
+        FieldPanel('tags'),
+        InlinePanel('child_page', label='Child Page')
+    ]
 
-    search_query = request.GET.get('query', None)
-    if search_query:
-        query = Query.get(search_query)
-        query.add_hit()
+    parent_page_types = ['app_name.MainPage']
 
-        qs = qs.search(search_query)
-        context['search_query'] = search_query
+    search_fields = Page.search_fields + [
+        index.RelatedFields('tags', [
+            index.SearchField('name'),
+            index.FilterField('name'),
+        ]),
+        index.RelatedFields('child_page', [
+            index.SearchField('some_field'),
+        ]),
+    ]
 
-    context['self'].queried_children = qs
-return context
+    def get_context(self, request, *args, **kwargs):
+        context = super(MainPage, self).get_context(request, *args, **kwargs)
+
+        # Filtering children `ChildPage`s on the MainPage model
+        qs = MainPage.objects.child_of(context['self']).live()
+
+        tags_filter = request.GET.get('tags', None)
+        if tags_filter:
+            tags = tags_filter.split(',')
+            querysets = []
+            for tag in tags:
+                querysets.append(MainPage.objects.filter(tags__slug=tag))
+            qs = qs.intersection(*querysets)
+            context['tags'] = tags
+
+        search_query = request.GET.get('query', None)
+        if search_query:
+            query = Query.get(search_query)
+            query.add_hit()
+
+            qs = qs.search(search_query)
+            context['search_query'] = search_query
+
+        context['self'].queried_children = qs
+    return context
 ```
