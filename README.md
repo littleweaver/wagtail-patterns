@@ -91,3 +91,33 @@ site = Site.objects.create(
 )
 settings = SomeSettings.for_site(site)
 ```
+
+## Search using tags
+
+```python
+def get_context(self, request, *args, **kwargs):
+    context = super(MaterialsIndexPage, self).get_context(request, *args, **kwargs)
+    
+    # Filtering children `ChildPage`s on the MainPage model
+    qs = MainPage.objects.child_of(context['self']).live()
+
+    tags_filter = request.GET.get('tags', None)
+    if tags_filter:
+        tags = tags_filter.split(',')
+        querysets = []
+        for tag in tags:
+            querysets.append(MainPage.objects.filter(tags__slug=tag))
+        qs = qs.intersection(*querysets)
+        context['tags'] = tags
+
+    search_query = request.GET.get('query', None)
+    if search_query:
+        query = Query.get(search_query)
+        query.add_hit()
+
+        qs = qs.search(search_query)
+        context['search_query'] = search_query
+
+    context['self'].queried_children = qs
+return context
+```
