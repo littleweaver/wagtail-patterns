@@ -141,3 +141,55 @@ class MainPage(Page):
         context['self'].queried_children = qs
     return context
 ```
+
+## Adding a custom image filter
+
+```python
+# app/wagtail_hooks.py
+from wagtail.wagtailcore import hooks
+
+from app import image_operations
+
+
+@hooks.register('register_image_operations')
+def register_image_operations():
+    return [
+        ('monotone', image_operations.MonotoneOperation),
+    ]
+```
+
+```python
+# app/image_operations.py
+from wagtail.wagtailimages.image_operations import Operation
+from willow.registry import registry
+from willow.plugins.pillow import PillowImage
+
+
+# `L` is 8-bit pixels, black and white.
+PILLOW_MONOTONE_MODE = 'L'
+PILLOW_MONOTONE_MODE_WITH_ALPHA = 'LA'
+
+
+def pillow_monotone(image):
+    if image.has_alpha():
+        mode = PILLOW_MONOTONE_MODE_WITH_ALPHA
+    else:
+        mode = PILLOW_MONOTONE_MODE
+    return PillowImage(image.image.convert(mode))
+
+
+registry.register_operation(PillowImage, 'monotone', pillow_monotone)
+
+
+class MonotoneOperation(Operation):
+    def construct(self):
+        pass
+
+    def run(self, willow, image, env):
+        return willow.monotone()
+```
+
+```html
+{% comment %}You can apply multiple filters in an image template tag.{% endcomment %}
+{% image page.teaser_image width-600 monotone %}
+```
